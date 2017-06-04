@@ -11,47 +11,32 @@
 
 (defonce app-state (atom {:view :entry}))
 
-(defmulti result-view (fn [data owner] (:result data)))
-
-(defmethod result-view :none
-  [data owner]
-  (reify
-    om/IRender
-    (render [this]
-      (dom/div nil ""))))
-
-(defmethod result-view :win
-  [data owner]
-  (reify
-    om/IRender
-    (render [this]
-      (dom/div nil
-        (dom/h1 nil "That's numberwang!")))))
-
-(defmethod result-view :lose
-  [data owner]
-  (reify
-    om/IRender
-    (render [this]
-      (dom/div nil
-        (dom/h1 nil "No")))))
-
 (defn handle-change [e owner {:keys [text]}]
   (let [value (.. e -target -value)]
     (om/set-state! owner :text value)))
 
-(defn check-winner [data owner]
-  (if (<= 90 (rand-int 100))
-    (om/set-state! owner :result :win)
-    (om/set-state! owner :result :lose))
+(defn set-entry []
+  (swap! app-state assoc :view :entry))
+
+(defn set-winner []
+  (js/setTimeout set-entry 5000)
+  (swap! app-state assoc :view :win))
+
+(defn set-loser []
+  (js/setTimeout set-entry 2000)
+  (swap! app-state assoc :view :lose))
+
+(defn check-winner [_ owner]
+  (if (<= 50 (rand-int 100))
+    (set-winner)
+    (set-loser))
   (om/set-state! owner :text ""))
 
 (defn entry-view [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:text ""
-       :result :none})
+      {:text ""})
     om/IRenderState
     (render-state [this state]
       (dom/div #js {:className "container"}
@@ -62,16 +47,40 @@
           (dom/button #js {:onClick #(check-winner data owner)
                            :disabled (string/blank? (:text state))
                            :className "btn btn-default"}
-                      "Submit")
-          (om/build result-view state))))))
+                      "Submit"))))))
+
+(defn win-view [data owner]
+  (reify
+    om/IRender
+    (render [this]
+      (dom/div #js {:className "container"
+                    :style {:height "100%"
+                            :width "100%"}}
+        (dom/h1 #js {:style {:text-align "justify"}}
+          "THAT'S NUMBERWANG!!!!!")))))
+
+(defn lose-view [data owner]
+  (reify
+    om/IRender
+    (render [this]
+      (dom/div #js {:className "container"
+                    :style {:text-align "justify"}}
+        (dom/h1 nil
+          "NO")))))
 
 (defmulti top-view (fn [data _] (:view data)))
 
 (defmethod top-view :entry
   [data owner] (entry-view data owner))
 
+(defmethod top-view :win
+  [data owner] (win-view data owner))
+
+(defmethod top-view :lose
+  [data owner] (lose-view data owner))
+
 (om/root
-  entry-view
+  top-view
   app-state
   {:target (. js/document (getElementById "app"))})
 
