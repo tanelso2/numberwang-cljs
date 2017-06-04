@@ -57,7 +57,10 @@
                     :style {:height "100%"
                             :width "100%"}}
         (dom/h1 #js {:style {:text-align "justify"}}
-          "THAT'S NUMBERWANG!!!!!")))))
+          (str "THAT'S NUMBERWANG"
+            (->> "!"
+              (repeat (+ 1 (rand-int 10)))
+              (reduce str))))))))
 
 (defn lose-view [data owner]
   (reify
